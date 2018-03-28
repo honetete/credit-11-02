@@ -13,21 +13,49 @@ def ebar(score, sample_num):
     return np.sqrt(1.*score*(1-score)/sample_num)
 
 # variable contenant le classifier
-clasif = RandomForestClassifier(n_estimators=10, max_depth=4)
+clasif = RandomForestClassifier()
 
 class model(BaseEstimator):
-    def _init_ (self):
-        self.clf = RandomForestClassifier(n_estimators=10, max_depth=4)
+    def __init__ (self):
+        '''
+        This constructor is supposed to initialize data members.
+        Use triple quotes for function documentation. 
+        '''
+        self.prepro = Preprocessor()
+        self.clf = clasif
         
 
     def fit(self,X,Y) :
-       self.clf = self.clf.fit(X,Y)
-       print("Fit Done")
+        '''
+        This function should train the model parameters.
+        Here we do nothing in this example...
+        Args:
+            X: Training data matrix of dim num_train_samples * num_feat.
+            y: Training label matrix of dim num_train_samples * num_labels.
+        Both inputs are numpy arrays.
+        For classification, labels could be either numbers 0, 1, ... c-1 for c classe
+        or one-hot encoded vector of zeros, with a 1 at the kth position for class k.
+        The AutoML format support on-hot encoding, which also works for multi-labels problems.
+        Use data_converter.convert_to_num() to convert to the category number format.
+        For regression, labels are continuous values.
+        
+    
+        Utiliser la fonction fit_transform du prepro pour entrainer le prepro et tranforme les donnees
+        '''
+        
+        Preprocessor.fit_transform(self.prepro,X)
+        self.clf = self.clf.fit(X,Y)
+        print("Fit Done")
     
     def predict(self, X):
-        pred = self.clf.predict_proba(X)
-        print("Prediction Done")
-        return pred
+       '''
+        Utiliser la fonction transform du preproccesind pour directement transformer les donnees
+        
+       '''
+       Preprocessor.transform(self.prepro,X)
+       pred = self.clf.predict(X)
+       print("Prediction Done")
+       return pred
 
     def save(self, path="./"):
         pickle.dump(self, open(path + '_model.pickle', "wb"))
