@@ -2,7 +2,9 @@
 from sys import argv
 import pickle
 from sklearn.base import BaseEstimator
-from sklearn.ensemble import RandomForestClassifier
+#from sklearn.ensemble import RandomForestClassifier
+#from sklearn.linear_model import LinearRegression
+from sklearn import svms
 import numpy as np
 from prepro import Preprocessor
 from sklearn.pipeline import Pipeline
@@ -13,7 +15,7 @@ def ebar(score, sample_num):
     return np.sqrt(1.*score*(1-score)/sample_num)
 
 # variable contenant le classifier
-clasif = RandomForestClassifier()
+clasif = svm.SVR()
 
 class model(BaseEstimator):
     def __init__ (self):
@@ -38,14 +40,14 @@ class model(BaseEstimator):
         The AutoML format support on-hot encoding, which also works for multi-labels problems.
         Use data_converter.convert_to_num() to convert to the category number format.
         For regression, labels are continuous values.
-        
-    
+                
         Utiliser la fonction fit_transform du prepro pour entrainer le prepro et tranforme les donnees
         '''
         
         Preprocessor.fit_transform(self.prepro,X)
         self.clf = self.clf.fit(X,Y)
         print("Fit Done")
+        
     
     def predict(self, X):
        '''
@@ -55,6 +57,7 @@ class model(BaseEstimator):
        Preprocessor.transform(self.prepro,X)
        pred = self.clf.predict(X)
        print("Prediction Done")
+       print (pred.shape)
        return pred
 
     def save(self, path="./"):
