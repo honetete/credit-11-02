@@ -2,9 +2,7 @@
 from sys import argv
 import pickle
 from sklearn.base import BaseEstimator
-#from sklearn.ensemble import RandomForestClassifier
-#from sklearn.linear_model import LinearRegression
-from sklearn import svms
+from sklearn.ensemble import GradientBoostingRegressor
 import numpy as np
 from prepro import Preprocessor
 from sklearn.pipeline import Pipeline
@@ -15,7 +13,7 @@ def ebar(score, sample_num):
     return np.sqrt(1.*score*(1-score)/sample_num)
 
 # variable contenant le classifier
-clasif = svm.SVR()
+clasif = GradientBoostingRegressor(n_estimators=250)#svm.SVR()
 
 class model(BaseEstimator):
     def __init__ (self):
@@ -40,8 +38,7 @@ class model(BaseEstimator):
         The AutoML format support on-hot encoding, which also works for multi-labels problems.
         Use data_converter.convert_to_num() to convert to the category number format.
         For regression, labels are continuous values.
-                
-        Utiliser la fonction fit_transform du prepro pour entrainer le prepro et tranforme les donnees
+
         '''
         
         Preprocessor.fit_transform(self.prepro,X)
@@ -59,6 +56,7 @@ class model(BaseEstimator):
        print("Prediction Done")
        print (pred.shape)
        return pred
+
 
     def save(self, path="./"):
         pickle.dump(self, open(path + '_model.pickle', "wb"))
