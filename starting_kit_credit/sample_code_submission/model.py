@@ -6,7 +6,6 @@ from sklearn.ensemble import GradientBoostingRegressor
 import numpy as np
 from prepro import Preprocessor
 from sklearn.pipeline import Pipeline
-import xgboost as xgb                                                                                                                                                                                                                                         
 
 def ebar(score, sample_num):
     '''ebar calculates the error bar for the classification score (accuracy or error rate)
@@ -14,6 +13,8 @@ def ebar(score, sample_num):
     return np.sqrt(1.*score*(1-score)/sample_num)
 
 # variable contenant le classifier
+clasif = GradientBoostingRegressor(n_estimators=250)#svm.SVR()
+
 class model(BaseEstimator):
     def __init__ (self):
         '''
@@ -21,7 +22,7 @@ class model(BaseEstimator):
         Use triple quotes for function documentation. 
         '''
         self.prepro = Preprocessor()
-        self.clf = xgb.XGBRegressor()
+        self.clf = clasif
         
 
     def fit(self,X,Y) :
@@ -45,28 +46,16 @@ class model(BaseEstimator):
         print("Fit Done")
         
     
-    def predict(self, X,seuil):
+    def predict(self, X):
        '''
-       This fonction should predict the value of each X
-       args:
-           X: Training data matrix of dim num_train_samples * num_feat
-           sueil: biais w
+        Utiliser la fonction transform du preproccesind pour directement transformer les donnees
         
        '''
        Preprocessor.transform(self.prepro,X)
        pred = self.clf.predict(X)
-       #print pred
-       y_pred = np.zeros(len(pred))
-
-#       for i in range(len(pred)):
-#           if pred[i]<=seuil:
-#               y_pred[i]=0
- #           else:
- #              y_pred[i]=1
-           
        print("Prediction Done")
-       #print (y_pred.shape)
-       return pred#y_pred
+       print (pred.shape)
+       return pred
 
 
     def save(self, path="./"):
@@ -81,7 +70,6 @@ class model(BaseEstimator):
     
     
 if __name__=="__main__":
-    import matplotlib.pyplot as plt
     # We can use this to run this file as a script and test the Classifier
     if len(argv)==1: # Use the default input and output directories if no arguments are provided
         input_dir = "../public_data" # A remplacer par public_data
@@ -104,68 +92,47 @@ if __name__=="__main__":
     print D
     
     # Here we define 3 classifiers and compare them
-#    classifier_dict = {
-#            'Pipeline': Pipeline([('prepro', Preprocessor()), ('classif', clasif)]),
-#        
-#    }
-#    for key in classifier_dict:
-    myclassifier = model()
+    classifier_dict = {
+            'Pipeline': Pipeline([('prepro', Preprocessor()), ('classif', clasif)]),
+        
+    }
+    for key in classifier_dict:
+        myclassifier = classifier_dict[key]
  
-    # Train
-    Yonehot_tr = D.data['Y_train']
-    # Attention pour les utilisateurs de problemes multiclasse,
-    # mettre convert_to_num DANS la methode fit car l'ingestion program
-    # fournit Yonehot_tr a la methode "fit"
-    # Ceux qui resolvent des problemes a 2 classes ou des problemes de
-    # regression n'en ont pas besoin
-    Ytrue_tr = convert_to_num(Yonehot_tr, verbose=False) # For multi-class only, to be compatible with scikit-learn
-    X_train = D.data['X_train']
-    Y_train = D.data['Y_train']
-    myclassifier.fit(D.data['X_train'], Ytrue_tr)
+        # Train
+        Yonehot_tr = D.data['Y_train']
+        # Attention pour les utilisateurs de problemes multiclasse,
+        # mettre convert_to_num DANS la methode fit car l'ingestion program
+        # fournit Yonehot_tr a la methode "fit"
+        # Ceux qui resolvent des problemes a 2 classes ou des problemes de
+        # regression n'en ont pas besoin
+        Ytrue_tr = convert_to_num(Yonehot_tr, verbose=False) # For multi-class only, to be compatible with scikit-learn
+        myclassifier.fit(D.data['X_train'], Ytrue_tr)
+        
+        # Some classifiers and cost function use a different encoding of the target
+        # values called on-hot encoding, i.e. a matrix (nsample, nclass) with one at
+        # the position of the class in each line (also called position code):
+        #nclass = len(set(Ytrue_tr))
+        #Yonehot_tr = np.zeros([Ytrue_tr.shape[0],nclass])
+        #for i, item in enumerate(Ytrue_tr): Yonehot_tr[i,item]=1
     
-    # Some classifiers and cost function use a different encoding of the target
-    # values called on-hot encoding, i.e. a matrix (nsample, nclass) with one at
-    # the position of the class in each line (also called position code):
-    #nclass = len(set(Ytrue_tr))
-    #Yonehot_tr = np.zeros([Ytrue_tr.shape[0],nclass])
-    #for i, item in enumerate(Ytrue_tr): Yonehot_tr[i,item]=1
-
-    # Making classification predictions (the output is a vector of class IDs)
-    Ypred_tr = myclassifier.predict(D.data['X_train'],0.5)
-    Ypred_va = myclassifier.predict(D.data['X_valid'],0.5)
-    Ypred_te = myclassifier.predict(D.data['X_test'],0.5)  
+        # Making classification predictions (the output is a vector of class IDs)
+        Ypred_tr = myclassifier.predict(D.data['X_train'])
+        Ypred_va = myclassifier.predict(D.data['X_valid'])
+        Ypred_te = myclassifier.predict(D.data['X_test'])  
+        
     
-    print("Cross-validating")
-    from sklearn.model_selection import KFold
-    from numpy import zeros  
-    n = 10 # 10-fold cross-validation
-    kf = KFold(n_splits=n)
-    kf.get_n_splits(X_train)
-    Ypred_cv = zeros(Ypred_tr.shape)
-    i=1
-    for train_index, test_index in kf.split(X_train):
-        print("Fold{:d}".format(i))
-        Xtr, Xva = X_train[train_index], X_train[test_index]
-        Ytr, Yva = Y_train[train_index], Y_train[test_index]
-        myclassifier.fit(Xtr, Ytr)
-        Ypred_cv[test_index] = myclassifier.predict(Xva,0.5)
-        i = i+1
-                
-
-    # Training success rate and error bar:
-    # First the regular accuracy (fraction of correct classifications)
-    from sklearn.metrics import roc_auc_score
-    print roc_auc_score(Ytrue_tr, Ypred_cv)
-    plt.plot(Ytrue_tr, Ypred_cv)
-    
-    # Note that the AutoML metrics are rescaled between 0 and 1.
-    
-#    print "%s\t%5.2f\t(%5.2f)" % (key, acc, ebar(acc, Ytrue_tr.shape[0]))
-#    print "The error bar is valid for Acc only"
-    # Note: we do not know Ytrue_va and Ytrue_te
-    # See modelTest for a better evaluation using cross-validation 
+        # Training success rate and error bar:
+        # First the regular accuracy (fraction of correct classifications)
+        acc = accuracy_score(Ytrue_tr, Ypred_tr)
+        # Note that the AutoML metrics are rescaled between 0 and 1.
+        
+        print "%s\t%5.2f\t(%5.2f)" % (key, acc, ebar(acc, Ytrue_tr.shape[0]))
+        print "The error bar is valid for Acc only"
+        # Note: we do not know Ytrue_va and Ytrue_te
+        # See modelTest for a better evaluation using cross-validation 
         
     # Another useful tool is the confusion matrix
     from sklearn.metrics import confusion_matrix
-#    print "Confusion matrix for %s" % key
+    print "Confusion matrix for %s" % key
     print confusion_matrix(Ytrue_tr, Ypred_tr)
