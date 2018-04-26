@@ -46,3 +46,4 @@ if __name__=="__main__":
     # Here show something that proves that the preprocessing worked fine
     print("*** Transformed data ***")
     print D
+    print D.data['X_train']
